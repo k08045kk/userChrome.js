@@ -5,12 +5,14 @@
 // @charset       UTF-8
 // @author        toshi(http://www.bugbugnow.net/)
 // @license       MIT License
-// @version       1
+// @version       2
+// @see           1.20180306 - 初版
+// @see           2.20190905 - Firefox69対応 createElement → createXULElement に置換
 // ==/UserScript==
 
 (function () {
   // スタイルシート切換え
-  var mi = document.createElement("menuitem");
+  var mi = document.createXULElement("menuitem");
   mi.setAttribute("id", "context-nostyle");
   mi.setAttribute("label", "スタイルシート切換え");
   mi.addEventListener('command', function() {
@@ -45,7 +47,7 @@
   }, false);
   
   // セパレータ
-  var ms = document.createElement("menuseparator");
+  var ms = document.createXULElement("menuseparator");
   ms.setAttribute('id', 'context-nostyle-sep');
   
   // タブメニューバーの最下部に要素を追加
