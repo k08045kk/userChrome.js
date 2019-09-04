@@ -5,14 +5,15 @@
 // @charset       UTF-8
 // @author        toshi(https://www.bugbugnow.net/)
 // @license       MIT License
-// @version       2
+// @version       3
 // @see           1 - 初版
 // @see           2 - 「CopyTabTitleAndURL.uc.js」から名称変更
+// @see           3.20190905 - Firefox69対応 createElement → createXULElement に置換
 // ==/UserScript==
 
 (function () {
   // タブのタイトルをコピー
-  var mt = document.createElement("menuitem");
+  var mt = document.createXULElement("menuitem");
   mt.setAttribute("id", "context-copytab-title");
   mt.setAttribute("label", "タブのタイトルをコピー");
   mt.addEventListener('command', function() {
@@ -23,7 +24,7 @@
   });
   
   // タブのURLをコピー
-  var mi = document.createElement("menuitem");
+  var mi = document.createXULElement("menuitem");
   mi.setAttribute("id", "context-copytab-url");
   mi.setAttribute("label", "タブのURLをコピー");
   mi.addEventListener('command', function() {
@@ -34,7 +35,7 @@
   });
   
   // セパレータ
-  var ms = document.createElement("menuseparator");
+  var ms = document.createXULElement("menuseparator");
   ms.setAttribute('id', 'context-copytab-sep');
   
   // メニューバーの最上部に要素を追加
