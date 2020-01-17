@@ -3,11 +3,12 @@
 // @description   スタイルシートの有効無効をタブメニューで選択する
 // @include       main
 // @charset       UTF-8
-// @author        toshi(http://www.bugbugnow.net/)
+// @author        toshi(https://www.bugbugnow.net/)
 // @license       MIT License
-// @version       2
+// @version       3
 // @see           1.20180306 - 初版
 // @see           2.20190905 - Firefox69対応 createElement → createXULElement に置換
+// @see           3.20190118 - Firefox72対応 gPageStyleMenu に変更（切り替え処理を追従で変更）
 // ==/UserScript==
 
 (function () {
@@ -18,12 +19,11 @@
   mi.addEventListener('command', function() {
     let browser = TabContextMenu.contextTab.linkedBrowser;  // 選択したタブ(右クリックしたタブ)
     let style = gPageStyleMenu._getStyleSheetInfo(browser); // スタイルシート有効無効
-    let mm = browser.messageManager;
     
     if (style.authorStyleDisabled) {
-      mm.sendAsyncMessage("PageStyle:Switch", '');
+      gPageStyleMenu.switchStyleSheet('');
     } else {
-      mm.sendAsyncMessage("PageStyle:Disable");
+      gPageStyleMenu.disableStyle();
     }
   });
   
