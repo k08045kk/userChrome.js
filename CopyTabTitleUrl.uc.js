@@ -1,49 +1,66 @@
 ﻿// ==UserScript==
 // @name          CopyTabTitleUrl.uc.js
-// @description   タブコンテキストメニューから選択しているタブのタイトルとURLをコピーする
+// @description   タブコンテキストメニューから、タイトルとURLをコピーする。
 // @include       main
 // @charset       UTF-8
-// @author        toshi(https://www.bugbugnow.net/)
+// @author        toshi (https://github.com/k08045kk)
 // @license       MIT License
-// @version       3
-// @see           1 - 初版
-// @see           2 - 「CopyTabTitleAndURL.uc.js」から名称変更
+// @version       4
+// @see           1.20180212 - 初版
+// @see           2.20180212 - 「CopyTabTitleAndURL.uc.js」から名称変更
 // @see           3.20190905 - Firefox69対応 createElement → createXULElement に置換
+// @see           4.20201122 - 「タイトルとURLをコピー」を追加
+// @see           4.20201122 - リファクタリング
+// @see           https://www.bugbugnow.net/2018/02/CopyTabTitleAndURL.uc.js.html
 // ==/UserScript==
 
-(function () {
-  // タブのタイトルをコピー
-  var mt = document.createXULElement("menuitem");
-  mt.setAttribute("id", "context-copytab-title");
-  mt.setAttribute("label", "タブのタイトルをコピー");
-  mt.addEventListener('command', function() {
-    var title = TabContextMenu.contextTab.linkedBrowser.contentTitle;
-    var clipboard = Cc['@mozilla.org/widget/clipboardhelper;1']
-                      .getService(Ci.nsIClipboardHelper);
-    clipboard.copyString(title);
+(function() {
+  // クリップボードコピー
+  const copyToClipboard = function(text) {
+    Cc['@mozilla.org/widget/clipboardhelper;1'].getService(Ci.nsIClipboardHelper).copyString(text);
+  };
+  
+  
+  // タイトルとURLをコピー
+  const m0 = document.createXULElement('menuitem');
+  m0.setAttribute('id', 'context-copytab-titleurl');
+  m0.setAttribute('label', 'タイトルとURLをコピー');
+  m0.addEventListener('command', function() {
+    const title = TabContextMenu.contextTab.linkedBrowser.contentTitle;
+    const url = TabContextMenu.contextTab.linkedBrowser.currentURI.spec;
+    copyToClipboard(title+'\n'+url);
   });
   
-  // タブのURLをコピー
-  var mi = document.createXULElement("menuitem");
-  mi.setAttribute("id", "context-copytab-url");
-  mi.setAttribute("label", "タブのURLをコピー");
-  mi.addEventListener('command', function() {
-      var url = TabContextMenu.contextTab.linkedBrowser.currentURI.spec;
-      var clipboard = Cc['@mozilla.org/widget/clipboardhelper;1']
-                        .getService(Ci.nsIClipboardHelper);
-      clipboard.copyString(url);
+  // タイトルをコピー
+  const m1 = document.createXULElement('menuitem');
+  m1.setAttribute('id', 'context-copytab-title');
+  m1.setAttribute('label', 'タイトルをコピー');
+  m1.addEventListener('command', function() {
+    const title = TabContextMenu.contextTab.linkedBrowser.contentTitle;
+    copyToClipboard(title);
+  });
+  
+  // URLをコピー
+  const m2 = document.createXULElement('menuitem');
+  m2.setAttribute('id', 'context-copytab-url');
+  m2.setAttribute('label', 'URLをコピー');
+  m2.addEventListener('command', function() {
+    const url = TabContextMenu.contextTab.linkedBrowser.currentURI.spec;
+    copyToClipboard(url);
   });
   
   // セパレータ
-  var ms = document.createXULElement("menuseparator");
+  const ms = document.createXULElement('menuseparator');
   ms.setAttribute('id', 'context-copytab-sep');
   
   // メニューバーの最上部に要素を追加
-  // タブのタイトルをコピー
-  // タブのURLをコピー
+  // タイトルとURLをコピー
+  // タイトルをコピー
+  // URLをコピー
   // セパレータ
-  var tabContextMenu = document.getElementById("tabContextMenu");
+  const tabContextMenu = document.getElementById('tabContextMenu');
   tabContextMenu.insertBefore(ms, tabContextMenu.firstChild);
-  tabContextMenu.insertBefore(mi, tabContextMenu.firstChild);
-  tabContextMenu.insertBefore(mt, tabContextMenu.firstChild);
+  tabContextMenu.insertBefore(m2, tabContextMenu.firstChild);
+  tabContextMenu.insertBefore(m1, tabContextMenu.firstChild);
+  tabContextMenu.insertBefore(m0, tabContextMenu.firstChild);
 }());
