@@ -7,16 +7,19 @@
 // @charset       UTF-8
 // @author        toshi (https://github.com/k08045kk)
 // @license       MIT License
-// @version       4
+// @version       5
 // @see           1.20180306 - 初版
 // @see           2.20190905 - Firefox69対応 createElement → createXULElement に置換
 // @see           3.20200118 - Firefox72対応 messageManager → switchStyleSheet/disableStyle で切換え
 // @see           4.20201122 - fix #1 カレントタブ以外のタブコンテキストメニューで正常動作しない
 // @see           4.20201122 - リファクタリング
+// @see           5.20210201 - コンテキストメニューにチェックボックスを表示する
 // @see           https://www.bugbugnow.net/2018/03/nostyleucjsuserchromejs.html
+// @see           https://github.com/k08045kk/userChrome.js
 // ==/UserScript==
 
 (function() {
+  // Firefoxの標準関数の迂回処理（カレントタブ以外のタブコンテキストメニュー対応）
   // chrome://browser/content/browser.js: gPageStyleMenu._sendMessageToAll
   function _sendMessageToAll(message, data, browser) {
     let contextsToVisit = [browser.browsingContext];//[gBrowser.selectedBrowser.browsingContext];
@@ -58,11 +61,13 @@
     _sendMessageToAll.call(this, "PageStyle:Disable", {}, browser);
   };
   
+  
   // スタイルシート切換え
   const mi = document.createXULElement('menuitem');
   mi.setAttribute('id', 'context-nostyle');
   mi.setAttribute('label', 'スタイルシート切換え');
-  //mi.setAttribute('label', 'Switch stylesheets');
+  //mi.setAttribute('label', 'PageStyle: Switch');
+  mi.setAttribute('type', 'checkbox');
   mi.addEventListener('command', () => {
     const tab = TabContextMenu.contextTab;
     const browser = tab != null
@@ -90,13 +95,13 @@
                   : gBrowser.selectedBrowser;                   // カレントタブ
     const style = gPageStyleMenu._getStyleSheetInfo(browser);   // スタイルシート有効無効
     
-    if (style.authorStyleDisabled) {
-      mi.setAttribute('label', 'スタイルシートを有効化');
-      //mi.setAttribute('label', 'Enable stylesheets');
-    } else {
-      mi.setAttribute('label', 'スタイルシートを無効化');
-      //mi.setAttribute('label', 'Disable stylesheets');
-    }
+    mi.setAttribute('checked', !style.authorStyleDisabled)
+    //mi.setAttribute('label', style.authorStyleDisabled
+    //                       ? 'スタイルシートを有効化'
+    //                       : 'スタイルシートを無効化')
+    //mi.setAttribute('label', style.authorStyleDisabled
+    //                       ? 'Enable stylesheets'
+    //                       : 'Disable stylesheets')
   });
   
   // セパレータ
