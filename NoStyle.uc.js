@@ -1,21 +1,23 @@
 ﻿// ==UserScript==
-// @name          NoStyle.uc.js
-// @description   スタイルシートの有効無効をタブコンテキストメニューから選択する。
-//                次の機能をタブコンテキストメニューから呼び出す。
-//                [メインメニュー] > [表示] > [スタイルシート]
-// @include       main
-// @charset       UTF-8
-// @author        toshi (https://github.com/k08045kk)
-// @license       MIT License
-// @version       5
-// @see           1.20180306 - 初版
-// @see           2.20190905 - Firefox69対応 createElement → createXULElement に置換
-// @see           3.20200118 - Firefox72対応 messageManager → switchStyleSheet/disableStyle で切換え
-// @see           4.20201122 - fix #1 カレントタブ以外のタブコンテキストメニューで正常動作しない
-// @see           4.20201122 - リファクタリング
-// @see           5.20210201 - コンテキストメニューにチェックボックスを表示する
-// @see           https://www.bugbugnow.net/2018/03/nostyleucjsuserchromejs.html
-// @see           https://github.com/k08045kk/userChrome.js
+// @name        NoStyle.uc.js
+// @description スタイルシートの有効無効をタブコンテキストメニューから選択する。
+//              次の機能をタブコンテキストメニューから呼び出す。
+//              + [Main Menu] > [View] > [Page Style]
+//              + [メインメニュー] > [表示] > [スタイルシート]
+// @include     main
+// @charset     UTF-8
+// @author      toshi (https://github.com/k08045kk)
+// @license     MIT License
+// @see         https://opensource.org/licenses/MIT
+// @version     5
+// @note        1.20180306 - 初版
+// @note        2.20190905 - Firefox69対応 createElement → createXULElement に置換
+// @note        3.20200118 - Firefox72対応 messageManager → switchStyleSheet/disableStyle で切換え
+// @note        4.20201122 - fix #1 カレントタブ以外のタブコンテキストメニューで正常動作しない
+// @note        4.20201122 - リファクタリング
+// @note        5.20210201 - コンテキストメニューにチェックボックスを表示する
+// @see         https://github.com/k08045kk/userChrome.js
+// @see         https://www.bugbugnow.net/2018/03/nostyleucjsuserchromejs.html
 // ==/UserScript==
 
 (function() {

@@ -1,17 +1,19 @@
 ﻿// ==UserScript==
-// @name          CopyTabTitleUrl.uc.js
-// @description   タブコンテキストメニューから、タイトルとURLをコピーする。
-// @include       main
-// @charset       UTF-8
-// @author        toshi (https://github.com/k08045kk)
-// @license       MIT License
-// @version       4
-// @see           1.20180212 - 初版
-// @see           2.20180212 - 「CopyTabTitleAndURL.uc.js」から名称変更
-// @see           3.20190905 - Firefox69対応 createElement → createXULElement に置換
-// @see           4.20201122 - 「タイトルとURLをコピー」を追加
-// @see           4.20201122 - リファクタリング
-// @see           https://www.bugbugnow.net/2018/02/CopyTabTitleAndURL.uc.js.html
+// @name        CopyTabTitleUrl.uc.js
+// @description タブコンテキストメニューから、タイトルとURLをコピーする。
+// @include     main
+// @charset     UTF-8
+// @author      toshi (https://github.com/k08045kk)
+// @license     MIT License
+// @see         https://opensource.org/licenses/MIT
+// @version     4
+// @note        1.20180212 - 初版
+// @note        2.20180212 - 「CopyTabTitleAndURL.uc.js」から名称変更
+// @note        3.20190905 - Firefox69対応 createElement → createXULElement に置換
+// @note        4.20201122 - 「タイトルとURLをコピー」を追加
+// @note        4.20201122 - リファクタリング
+// @see         https://github.com/k08045kk/userChrome.js
+// @see         https://www.bugbugnow.net/2018/02/CopyTabTitleAndURL.uc.js.html
 // ==/UserScript==
 
 (function() {
@@ -19,6 +21,8 @@
   const copyToClipboard = function(text) {
     Cc['@mozilla.org/widget/clipboardhelper;1'].getService(Ci.nsIClipboardHelper).copyString(text);
   };
+  // copyToClipboard('['+title+']('+url+')');             // Markdown
+  // copyToClipboard('<a href="'+url+'">'+title+'</a>');  // Hyperlink
   
   
   // タイトルとURLをコピー
