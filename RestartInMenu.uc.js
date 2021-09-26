@@ -1,13 +1,14 @@
 // ==UserScript==
 // @name          RestartInMenu.uc.js
-// @description   Restart Firefox from the menu (main menu / app menu).
+// @description   Restart from the menu (main menu / app menu).
 // @include       main
 // @charset       UTF-8
 // @author        toshi (https://github.com/k08045kk)
 // @license       MIT License | https://opensource.org/licenses/MIT
 // @compatibility 91+
-// @version       0.1
-// @since         0.1.20210924 - First edition
+// @version       0.2
+// @since         0.1 - 20210924 - 初版
+// @since         0.2 - 20210926 - Thunderbird対応
 // @see           https://github.com/k08045kk/userChrome.js
 // @see           https://www.bugbugnow.net/2021/09/firefox-restart-in-menu.html
 // ==/UserScript==
@@ -38,7 +39,8 @@
   // App menu (Hamburger menu)
   try {
     const observer = new MutationObserver(function(mutationsList, observer) {
-      const appquit = document.getElementById('appMenu-quit-button2');
+      const appquit = document.getElementById('appMenu-quit-button2') // Firefox
+                   || document.getElementById('appmenu-quit');        // Thunderbird
       if (appquit) {
         const appmenu = document.createXULElement('toolbarbutton');
         appmenu.setAttribute('id', 'appMenu-restart-button');
