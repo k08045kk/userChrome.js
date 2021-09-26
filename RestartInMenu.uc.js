@@ -6,22 +6,25 @@
 // @author        toshi (https://github.com/k08045kk)
 // @license       MIT License | https://opensource.org/licenses/MIT
 // @compatibility 91+
-// @version       0.2
+// @version       0.3
 // @since         0.1 - 20210924 - 初版
 // @since         0.2 - 20210926 - Thunderbird対応
+// @since         0.3 - 20210926 - リファクタリング
 // @see           https://github.com/k08045kk/userChrome.js
 // @see           https://www.bugbugnow.net/2021/09/firefox-restart-in-menu.html
 // ==/UserScript==
 
-(function() {
+(() => {
   // -- config --
   const MENU_ITEM_LABEL_NAME = 'Restart';
   
   
   
-  const cmd_restart = function(event) {
-    // Restart
-    Services.startup.quit(Ci.nsIAppStartup.eRestart | Ci.nsIAppStartup.eAttemptQuit);
+  const cmd_restart = (event) => {
+    // see chrome://global/content/aboutProfiles.js
+    const Ci = Components.interfaces;
+    const flags = Ci.nsIAppStartup.eRestart | Ci.nsIAppStartup.eAttemptQuit;
+    Services.startup.quit(flags);
   };
   
   // File menu (Main menu)
@@ -38,7 +41,7 @@
   
   // App menu (Hamburger menu)
   try {
-    const observer = new MutationObserver(function(mutationsList, observer) {
+    const observer = new MutationObserver((mutationsList, observer) => {
       const appquit = document.getElementById('appMenu-quit-button2') // Firefox
                    || document.getElementById('appmenu-quit');        // Thunderbird
       if (appquit) {
