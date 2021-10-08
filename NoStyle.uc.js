@@ -1,23 +1,25 @@
 ﻿// ==UserScript==
-// @name        NoStyle.uc.js
-// @description スタイルシートの有効無効をタブコンテキストメニューから選択する。
-//              次の機能をタブコンテキストメニューから呼び出す。
-//              + [Main Menu] > [View] > [Page Style]
-//              + [メインメニュー] > [表示] > [スタイルシート]
-// @include     main
-// @charset     UTF-8
-// @author      toshi (https://github.com/k08045kk)
-// @license     MIT License | https://opensource.org/licenses/MIT
-// @version     6
-// @since       1.20180306 - 初版
-// @since       2.20190905 - Firefox69対応 createElement → createXULElement に置換
-// @since       3.20200118 - Firefox72対応 messageManager → switchStyleSheet/disableStyle で切換え
-// @since       4.20201122 - fix #1 カレントタブ以外のタブコンテキストメニューで正常動作しない
-// @since       4.20201122 - リファクタリング
-// @since       5.20210201 - コンテキストメニューにチェックボックスを表示する
-// @since       6.20210910 - メタデータ修正
-// @see         https://github.com/k08045kk/userChrome.js
-// @see         https://www.bugbugnow.net/2018/03/nostyleucjsuserchromejs.html
+// @name          NoStyle.uc.js
+// @description   スタイルシートの有効無効をタブコンテキストメニューから選択する。
+//                次の機能をタブコンテキストメニューから呼び出す。
+//                + [Main Menu] > [View] > [Page Style]
+//                + [メインメニュー] > [表示] > [スタイルシート]
+// @include       main
+// @charset       UTF-8
+// @author        toshi (https://github.com/k08045kk)
+// @license       MIT License | https://opensource.org/licenses/MIT
+// @compatibility 69+
+// @version       6
+// @since         1 - 20180306 - 初版
+// @since         2 - 20190905 - Firefox69対応 createElement → createXULElement に置換
+// @since         3 - 20200118 - Firefox72対応 messageManager → switchStyleSheet/disableStyle で切換え
+// @since         4 - 20201122 - fix #1 カレントタブ以外のタブコンテキストメニューで正常動作しない
+// @since         4 - 20201122 - リファクタリング
+// @since         5 - 20210201 - コンテキストメニューにチェックボックスを表示する
+// @since         6 - 20210910 - メタデータ修正
+// @since         6 - 20211008 - メタデータ修正
+// @see           https://github.com/k08045kk/userChrome.js
+// @see           https://www.bugbugnow.net/2018/03/nostyleucjsuserchromejs.html
 // ==/UserScript==
 
 (function() {

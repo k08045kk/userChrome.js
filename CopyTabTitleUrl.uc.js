@@ -1,19 +1,21 @@
 ﻿// ==UserScript==
-// @name        CopyTabTitleUrl.uc.js
-// @description タブコンテキストメニューから、タイトルとURLをコピーする。
-// @include     main
-// @charset     UTF-8
-// @author      toshi (https://github.com/k08045kk)
-// @license     MIT License | https://opensource.org/licenses/MIT
-// @version     5
-// @since       1.20180212 - 初版
-// @since       2.20180212 - 「CopyTabTitleAndURL.uc.js」から名称変更
-// @since       3.20190905 - Firefox69対応 createElement → createXULElement に置換
-// @since       4.20201122 - 「タイトルとURLをコピー」を追加
-// @since       4.20201122 - リファクタリング
-// @since       5.20210910 - メタデータ修正
-// @see         https://github.com/k08045kk/userChrome.js
-// @see         https://www.bugbugnow.net/2018/02/CopyTabTitleAndURL.uc.js.html
+// @name          CopyTabTitleUrl.uc.js
+// @description   タブコンテキストメニューから、タイトルとURLをコピーする。
+// @include       main
+// @charset       UTF-8
+// @author        toshi (https://github.com/k08045kk)
+// @license       MIT License | https://opensource.org/licenses/MIT
+// @compatibility 69+
+// @version       5
+// @since         1 - 20180212 - 初版
+// @since         2 - 20180212 - 「CopyTabTitleAndURL.uc.js」から名称変更
+// @since         3 - 20190905 - Firefox69対応 createElement → createXULElement に置換
+// @since         4 - 20201122 - 「タイトルとURLをコピー」を追加
+// @since         4 - 20201122 - リファクタリング
+// @since         5 - 20210910 - メタデータ修正
+// @since         5 - 20211008 - メタデータ修正
+// @see           https://github.com/k08045kk/userChrome.js
+// @see           https://www.bugbugnow.net/2018/02/CopyTabTitleAndURL.uc.js.html
 // ==/UserScript==
 
 (function() {
