@@ -5,14 +5,14 @@
  * @name          config.js
  *                install/config.js
  * @description   Use the AutoConfig method to load userChrome.js.
- *                userChrome.js will be loaded only once at startup.
  * @charset       UTF-8
  * @author        toshi (https://github.com/k08045kk)
  + @license       MIT License | https://opensource.org/licenses/MIT
  * @compatibility 91+ (Firefox / Thunderbird)
  *                It supports the latest ESR.
- * @version       0.1
+ * @version       0.2
  * @since         0.1 - 20211104 - First edition
+ * @since         0.2 - 20211122 - Second edition
  * @see           https://github.com/k08045kk/userChrome.js
  */
 (() => {
@@ -33,14 +33,13 @@
     if (Services.appinfo.inSafeMode) {
       //console.log('[AutoConfig] safe mode.');
       return;
-      // Note: Extensions will not work in Safe Mode, and ChromeScript should not work either.
     }
     
     
     // 2. Load userChrome.js at startup
     const file = Services.dirsvc.get('UChrm', Components.interfaces.nsIFile);
     file.append('userChrome.js');
-    if (file.exists() && file.isFile() && file.isReadable()) {
+    if (file.exists() && file.isFile()) {
       const fileURL = Services.io.getProtocolHandler('file')
                                  .QueryInterface(Components.interfaces.nsIFileProtocolHandler)
                                  .getURLSpecFromActualFile(file) + '?' + file.lastModifiedTime;
@@ -48,9 +47,9 @@
       //console.log('[AutoConfig] fileURL:', fileURL);
       // Note: Use the last modified date to prevent the use of the previous cache.
       
- /*   // a. import method -----------------------------------------------------
+/**   // a. import method at startup ------------------------------------------
       Components.utils.import(fileURL);
- /*/  // b. sub-script method -------------------------------------------------
+/**/  // b. sub-script method at startup --------------------------------------
       const principal = Services.scriptSecurityManager.getSystemPrincipal();
       const sandbox = Components.utils.Sandbox(principal, {
         freshZone: true,
@@ -61,7 +60,22 @@
         wantXrays: true,
       });
       Services.scriptloader.loadSubScript(fileURL, sandbox);
-//*/  // ----------------------------------------------------------------------
+/**   // c. sub-script method at window load ----------------------------------
+      const onLoad = (event) => {
+        const doc = event.originalTarget;
+        const win = doc && doc.defaultView;
+        if (!(win && 'isChromeWindow' in win)) { return; }
+        if (!(win.location.protocol == 'chrome:' || win.location.protocol == 'about:')) { return; }
+        Services.scriptloader.loadSubScript(fileURL, win);
+      };
+      Services.obs.addObserver((subject, topic, data) => {
+        const win = subject;
+        if (!(win && 'isChromeWindow' in win)) { return; }
+        win.addEventListener('load', onLoad, {capture:true, passive:true});
+      }, 'domwindowopened', false);
+/**/  // ----------------------------------------------------------------------
+    } else {
+      Components.utils.reportError('[AutoConfig] file not found. ('+file.path+')');
     }
   } catch (e) { Components.utils.reportError(e); }
   // Note: To avoid displaying a dialog when an error occurs, enclose it in try catch.

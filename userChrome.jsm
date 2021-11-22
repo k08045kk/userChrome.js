@@ -7,8 +7,9 @@
  + @license       MIT License | https://opensource.org/licenses/MIT
  * @compatibility 91+ (Firefox / Thunderbird)
  *                It supports the latest ESR.
- * @version       0.1
+ * @version       0.2
  * @since         0.1 - 20211104 - 初版
+ * @since         0.2 - 20211122 - 二版
  * @see           https://github.com/k08045kk/userChrome.js
  */
 'use strict';
@@ -19,13 +20,17 @@ ChromeUtils.defineModuleGetter(this, 'Services', 'resource://gre/modules/Service
 ChromeUtils.defineModuleGetter(this, 'OS', 'resource://gre/modules/osfile.jsm');
 ChromeUtils.defineModuleGetter(this, 'console', 'resource://gre/modules/Console.jsm');
 
+// バージョン
+const VERSION = '0.2';
+
 // -------------------- config --------------------
 // デバッグモード (default:false)
 // デバッグモードでは、ログを出力します。
 const DEBUG_MODE = false;
 
 // ChromeScript を再利用する (default:true)
-// 再利用しない場合、 ChromeScript のデバッグ作業で役立ちます。
+// 再利用する場合、 ChromeScript の更新を無視します。
+// 再利用しない場合、 ChromeScript の更新を確認します。（ChromeScript のデバッグに役立ちます）
 const REUSE = true;
 
 // サブディレクトリ (default:[''])
@@ -51,15 +56,15 @@ var UserChromeJS = {
   reuse: REUSE, 
   subDirectorys: SUB_DIRECOTRYS, 
   mainLocation: MAIN_LOCATION, 
-  disableChromeLocations: [
+  disableLocations: [
     'chrome://global/content/commonDialog.xhtml', 
     'chrome://global/content/selectDialog.xhtml', 
     'chrome://global/content/alerts/alert.xhtml', 
     //'chrome://extensions/content/dummy.xhtml', 
     //'chrome://browser/content/webext-panels.xhtml', 
-  ],
-  disableAboutLocations: [
-    'about:blank', 'about:home', 'about:newtab', 'about:welcome', 
+    'about:blank', 'about:home', 'about:newtab', 
+    //'about:privatebrowsing', 'about:welcomeback', 'about:sessionrestore', 'about:welcome', 
+    // Note: chrome://browser/content/browser.js: gInitialPages
   ],
   
   __isTarget: (win) => {
@@ -95,11 +100,12 @@ var UserChromeJS = {
     /** @class ChromeScriptMeta */
     const details = {
       //file: file,
+      lastModifiedTime: file.lastModifiedTime,
       name: file.leafName,
-      //path: file.path,
+      path: file.path,
       url: OS.Path.toFileURI(file.path) + '?' + file.lastModifiedTime,
       //content: content,
-      //meta: meta,
+      meta: meta,
       includes: [],
       excludes: [],
       includemain: false,
@@ -151,11 +157,15 @@ var UserChromeJS = {
   },
   
   // ChromeScript を（解析のために）読み込む
-  _load: async function() {
+  _load: async function(oldscripts) {
     this.debugMode && console.log('[userChrome.jsm] _load():');
     const startTime = Date.now();
     
+    oldscripts = oldscripts || [];
+    const oldpaths = oldscripts.map(script => script.path);
+    
     const promises = [];
+    const onError = (e) => { Components.utils.reportError(e); return e; };
     for (let sub of this.subDirectorys) {
       const directory = Services.dirsvc.get('UChrm', Components.interfaces.nsIFile);
       directory.append(sub);
@@ -166,24 +176,59 @@ var UserChromeJS = {
         while (files.hasMoreElements()) {
           const file = files.getNext()
                             .QueryInterface(Components.interfaces.nsIFile);
-          if (file.isFile() && file.isReadable() && /\.uc\.js$/i.test(file.leafName)) {
-            promises.push(this._parse(file));
+          if (file.isFile() && /\.uc\.js$/i.test(file.leafName)) {
+            const index = oldpaths.indexOf(file.path);
+            const old = 0 <= index ? oldscripts[index] : null;
+            if (old && old.lastModifiedTime == file.lastModifiedTime) {
+              this.debugMode && console.log('[userChrome.jsm] reuse:', old.name);
+              promises.push(old);
+            } else {
+              promises.push(this._parse(file).catch(onError));
+            }
           }
         }
       }
     }
-    const onError = (e) => { Components.utils.reportError(e); return e; };
-    const scripts = await Promise.all(promises.map(promise => promise.catch(onError)));
+    const scripts = await Promise.all(promises);
     
     const elapsedTime = Date.now() - startTime;
     this.debugMode && console.log('[userChrome.jsm] _load:', elapsedTime+'ms');
     return scripts.filter(script => !(script instanceof Error));
   },
   
+  // ChromeScript のメタデータ配列を取得する
+  _get: async function() {
+    if (this.reuse) {
+      if (!this._scripts) {
+        this._promise = this._promise 
+                     || this._load();
+        this._scripts = await this._promise;
+      }
+    } else {
+      this._scripts = await this._load(this._scripts)
+    }
+    return this._scripts;
+  },
+  
   // ChromeScript を実行する
-  _exec: async function(target, script) {
+  _run: async function(target, script) {
     try {
+      /**
+       * UCJS API
+       * @deprecated 使用すると ChromeScript は、 userChrome.js の実装に依存します。
+       *             まだ、この機能は一般的ではありません。変更の可能性が多分にあります。
+       */
+      target.UCJS = {
+        info: {
+          handler: 'userChrome.jsm',    // TODO: どうする？
+          version: VERSION,
+          scriptName: script.name,
+          scriptMeta: script.meta,
+        },
+        // TODO: getValue / setValue / deleteValue / listValues
+      };
       Services.scriptloader.loadSubScript(script.url, target/*, script.charset*/);
+      //target.eval(script.content);
     } catch (e) {
       Components.utils.reportError(e);
     } finally {
@@ -192,52 +237,27 @@ var UserChromeJS = {
   },
   
   /**
-   * 再構築する
-   * ChromeScript の事前読み込みを開始します。
-   */
-  rebuild: function() {
-    if (this.reuse) {
-      this._promise = this._load();
-      this._scripts = null;
-    }
-  },
-  
-  /**
-   * ChromeScript のメタデータ配列を取得する
-   * @return {ChromeScriptMeta[]} ChromeScript のメタデータ配列
-   */
-  get: async function() {
-    if (this.reuse) {
-      if (!this._scripts) {
-        this._promise = this._promise 
-                     || this._load();
-        this._scripts = await this._promise;
-      }
-      return this._scripts;
-    }
-    return await this._load();
-  },
-  
-  /**
    * window で ChromeScript を実行する
    * @param {ChromeWindow|Window} win - window （ウィンドウ・フレーム）
    * @param {ChromeScriptMeta[]} scripts - ChromeScript のメタデータ配列
-   * @param {Object} [option={}] - オプション
+   * @param {Object} option - オプション
    */
-  exec: async function(win, scripts, option = {}) {
+  _exec: async function(win, scripts, option) {
     if (!this.__isTarget(win)) { return; }
     if (!(win.location.protocol == 'chrome:' || win.location.protocol == 'about:')) { return; }
-    if (this.disableChromeLocations.indexOf(win.location.href) != -1) { return; }
-    if (this.disableAboutLocations.indexOf(win.location.href) != -1) { return; }
+    if (this.disableLocations.indexOf(win.location.href) != -1) { return; }
     
+    scripts = scripts
+           || await this._get();
+    option  = option
+           || {};
     this.mainLocation = this.mainLocation 
                      || this.__getMainLocation(win.location.href);
-    scripts = scripts
-           || await this.get();
     const isMain = this.mainLocation == win.location.href;
     const isFrame = 'frame' in option ? option.frame : this.__isFrame(win);
     
-    this.debugMode && console.log('[userChrome.jsm] exec():', win, scripts);
+    const startTime = Date.now();
+    this.debugMode && console.log('[userChrome.jsm] _exec():', win, scripts);
     for (let script of scripts) {
       const isIncludeMain = script.includemain && isMain;
       const isExcludeMain = script.excludemain && isMain;
@@ -246,15 +266,28 @@ var UserChromeJS = {
       } else if (isExcludeMain || script.excludes.some(re => re.test(win.location.href))) {
         //this.debugMode && console.log('[userChrome.jsm] exclude: '+script.name);
       } else if (isIncludeMain || script.includes.some(re => re.test(win.location.href))) {
-        this.debugMode && console.log('[userChrome.jsm] exec: '+script.name/*, script.charset*/);
-        await this._exec(win, script);
+        this.debugMode && console.log('[userChrome.jsm] run: '+script.name/*, script.charset*/);
+        await this._run(win, script);
       } else {
         
       }
     }
+    const elapsedTime = Date.now() - startTime;
+    this.debugMode && console.log('[userChrome.jsm] _exec:', elapsedTime+'ms');
     // Note: script は、順に実行します。並行実行ではなく、実行順を保証します。
     //       実行順に依存する ChromeScript がある場合、
     //       SUB_DIRECOTRYS やファイル名を利用して実行順を制御してください。
+  },
+  
+  /**
+   * 再構築する
+   * ChromeScript の事前読み込みを開始します。
+   */
+  rebuild: function() {
+    if (this.reuse) {
+      this._promise = this._load(this._scripts);
+      this._scripts = null;
+    }
   },
   
   /**
@@ -263,18 +296,19 @@ var UserChromeJS = {
    * @param {ChromeWindow} win - window （ウィンドウ）
    */
   startInWindow: function(win) {
-    if (this._observed) { return; }
+    if (!win) { return; }
+    if (this._observed || win.UCJS) { return; }
     this._observedInWindow = true;
-    // TODO: 単一ウィンドウでの複数実行の阻止
+    win.UCJS = {};
     
     this.debugMode && console.log('[userChrome.jsm] startInWindow():', win);
     if (!this.__isWindow(win)) { return; }
-    if (!(win.location.protocol == 'chrome:')) { return; }
-    if (this.disableChromeLocations.indexOf(win.location.href) != -1) { return; }
+    if (!(win.location.protocol == 'chrome:' || win.location.protocol == 'about:')) { return; }
+    if (this.disableLocations.indexOf(win.location.href) != -1) { return; }
     
-    let promise = this.get()
+    let promise = this._get()
                       .then(async (scripts) => {
-      await this.exec(win, scripts, {frame:false});
+      await this._exec(win, scripts, {frame:false});
       return scripts;
     });
     let scripts = null;
@@ -282,7 +316,7 @@ var UserChromeJS = {
     // Note: ウィンドウとフレームで同じ ChromeScript を保証します。
     //       ウィンドウと別ウィンドウで同じ ChromeScript を保証しません。
     
-    const startInFrame = async (event) => {
+    win.document.addEventListener('load', async (event) => {
       const doc = event.originalTarget;
       const win = doc && doc.defaultView;
       this.debugMode && console.log('[userChrome.jsm] startInFrame():', win);
@@ -290,18 +324,8 @@ var UserChromeJS = {
       
       scripts = scripts
              || await promise;
-      await this.exec(win, scripts, {frame:true});
-    };
-    win.document.addEventListener('load', startInFrame, {capture:true, passive:true});
-    
-    // Note: 呼び出しサンプル
-    //       Services.obs.addObserver((subject, topic, data) => {
-    //         const win = subject;
-    //         win.addEventListener('load', (event) => {
-    //           const doc = event.originalTarget;
-    //           UserChromeJS.startInWindow(doc && doc.defaultView);
-    //         }, {capture:true, passive:true});
-    //       }, 'domwindowopened', false);
+      await this._exec(win, scripts, {frame:true});
+    }, {capture:true, passive:true});
   },
   
   /**
@@ -313,22 +337,21 @@ var UserChromeJS = {
     this._observed = true;
     
     this.debugMode && console.log('[userChrome.jsm] start():');
-    const onTargetLoad = async (event) => {
+    const onLoad = async (event) => {
       const doc = event.originalTarget;
       const win = doc && doc.defaultView;
-      await this.exec(win);
+      await this._exec(win);
       // Note: ウィンドウとフレームで ChromeScript の実行順序を保証しません。
       // Note: ウィンドウとフレームで同じ ChromeScript を保証しません。
     };
-    const onWindowOpend = (subject, topic, data) => {
+    Services.obs.addObserver((subject, topic, data) => {
       this.debugMode && console.log('[userChrome.jsm] onWindowOpend():', subject, topic, data);
       const win = subject;
       if (!this.__isWindow(win)) { return; }
       // Note: win.location.href == 'about:blank' -> true
       
-      win.addEventListener('DOMContentLoaded', onTargetLoad, {capture:true, passive:true});
-    };
-    Services.obs.addObserver(onWindowOpend, 'domwindowopened', false);
+      win.addEventListener('DOMContentLoaded', onLoad, {capture:true, passive:true});
+    }, 'domwindowopened', false);
   },
   
   /**
@@ -336,26 +359,21 @@ var UserChromeJS = {
    */
   init: function() {
     this.debugMode && console.log('[userChrome.jsm] init():');
+    
     if (!(this._promise || this._scripts)) {
+      this.debugMode && console.log('[userChrome.jsm] build():');
       this.rebuild();
     }
   },
   
   // Note: Window / Frame （ウィンドウとフレーム）の区別
   //       Target: win && 'isChromeWindow' in win
-  //         Window: win && win.isChromeWindow && win === win.parent
-  //         Frame: (win && 'isChromeWindow' in win) && !(win && win.isChromeWindow && win === win.parent)
-  //         RootTarget: win && 'isChromeWindow' in win && win === win.parent
-  //           RootWindow: win && win.isChromeWindow === true && win === win.parent
-  //           RootContent: win && win.isChromeWindow === false && win === win.parent
-  //       （Target は、 Window と Frame である。 Sandbox / BackstagePass ではない）
+  //       Window: win && win.isChromeWindow && win === win.parent
+  //       Frame: (win && 'isChromeWindow' in win) && !(win && win.isChromeWindow && win === win.parent)
   
   // Note: window / document のイベント伝搬
   //       domwindowopened 時に、 document へ登録したリスナーは、パージされる。
   //       document で Window の load イベントをリッスンしない。
   //       document で Frame / Image の load イベントを（キャプチャのみ）リッスンする。
   //       window / document で Window / Frame の DOMContentLoaded イベントをリッスンする。
-  
-  // TODO: 要調査 Overlay, UCJS Loader, 拡張機能
-  // TODO: GM 関数に類似する機能を提供する？
 };

@@ -10,8 +10,9 @@
 // @license       MIT License | https://opensource.org/licenses/MIT
 // @compatibility 91+ (Firefox / Thunderbird)
 //                It supports the latest ESR.
-// @version       0.1
+// @version       0.2
 // @since         0.1 - 20211104 - 初版
+// @since         0.2 - 20211122 - 二版
 // @see           https://github.com/k08045kk/userChrome.js
 // ==/UserScript==
 
@@ -38,7 +39,7 @@ const EXPORTED_SYMBOLS = [];
     let module = null;
     const file = Services.dirsvc.get('UChrm', Components.interfaces.nsIFile);
     file.append(name);
-    if (file.exists() && file.isFile() && file.isReadable()) {
+    if (file.exists() && file.isFile()) {
       const fileURL = Services.io.getProtocolHandler('file')
                                  .QueryInterface(Components.interfaces.nsIFileProtocolHandler)
                                  .getURLSpecFromActualFile(file) + '?' + file.lastModifiedTime;
@@ -83,9 +84,7 @@ const EXPORTED_SYMBOLS = [];
     //loadJS('userChrome.startup.js');
     //...
     // Note: Write a ChromeScript to be loaded manually.
-    //       To reduce the need to rewrite config.js, we'll load it in userChrome.js.
-    // TODO: Use file names to automatically load ChromeScript?
-    //       Metadata parse is not performed because of the delay in file loading.
+    //       Load it in userChrome.js to reduce the need to rewrite config.js.
   }
   
   
@@ -107,14 +106,4 @@ const EXPORTED_SYMBOLS = [];
     const win = globalThis.window;
     Services.ucjs.startInWindow(win);
   }
-  
-  
-  // 4. Load BootstorapLoader.jsm
-  if (isStartup) {
-    //loadJSM('BootstrapLoader.jsm');
-    // TODO: 未定
-  }
-  
-  
-  // TODO: ChromeWorker 要調査
 })();
