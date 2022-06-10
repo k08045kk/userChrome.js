@@ -10,9 +10,10 @@
 // @license       MIT License | https://opensource.org/licenses/MIT
 // @compatibility 91+ (Firefox / Thunderbird)
 //                It supports the latest ESR.
-// @version       0.2
+// @version       0.3
 // @since         0.1 - 20211104 - 初版
 // @since         0.2 - 20211122 - 二版
+// @since         0.3 - 20220610 - Firefox102対応（ChromeUtils.import() で SecurityError になる）
 // @see           https://github.com/k08045kk/userChrome.js
 // ==/UserScript==
 
@@ -35,7 +36,7 @@ const EXPORTED_SYMBOLS = [];
     return;
   }
   
-  const loadScript = (type, name) => {
+  const loadScript = (type, name, options) => {
     let module = null;
     const file = Services.dirsvc.get('UChrm', Components.interfaces.nsIFile);
     file.append(name);
@@ -50,6 +51,8 @@ const EXPORTED_SYMBOLS = [];
       try {
         switch (type) {
         case 'import':
+          // Firefox102+
+          // Error: SecurityError: The operation is insecure.
           module = ChromeUtils.import(fileURL);
           break;
         case 'sub-script':
@@ -59,7 +62,7 @@ const EXPORTED_SYMBOLS = [];
             sandboxName: name,
             wantComponents: true,
             wantExportHelpers: false,
-            wantGlobalProperties: ['ChromeUtils'],
+            wantGlobalProperties: options.wantGlobalProperties || ['ChromeUtils'],
             wantXrays: true,
           });
           Services.scriptloader.loadSubScript(fileURL, sandbox);
@@ -73,7 +76,7 @@ const EXPORTED_SYMBOLS = [];
     return module;
   };
   const loadJSM = (name) => { return loadScript('import', name); };
-  const loadJS = (name) => {  return loadScript('sub-script', name); }
+  const loadJS = (name, options) => {  return loadScript('sub-script', name, options); }
   
   const isWindowLoad = 'isChromeWindow' in globalThis;
   const isStartup = !isWindowLoad;
@@ -90,7 +93,8 @@ const EXPORTED_SYMBOLS = [];
   
   // 3. Load userChrome.jsm
   if (isStartup || !Services.ucjs) {
-    const {UserChromeJS} = loadJSM('userChrome.jsm') || {UserChromeJS:null};
+    const options = {wantGlobalProperties: ['ChromeUtils', 'TextDecoder']};
+    const {UserChromeJS} = loadJS('userChrome.jsm', options) || {UserChromeJS:null};
     if (UserChromeJS) {
       UserChromeJS.init();
       if (isStartup) {
