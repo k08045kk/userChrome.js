@@ -51,7 +51,7 @@ const EXPORTED_SYMBOLS = [];
       try {
         switch (type) {
         case 'import':
-          // Firefox102+
+          // Firefox101+
           // Error: SecurityError: The operation is insecure.
           module = ChromeUtils.import(fileURL);
           break;
