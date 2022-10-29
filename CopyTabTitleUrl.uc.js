@@ -1,4 +1,4 @@
-﻿// ==UserScript==
+// ==UserScript==
 // @name          CopyTabTitleUrl.uc.js
 // @description   タブコンテキストメニューから、タイトルとURLをコピーする。
 // @include       main

@@ -1,4 +1,4 @@
-﻿// ==UserScript==
+// ==UserScript==
 // @name          URLBarAutoCopy.uc.js
 // @description   Automatically copy the URL bar.
 // @description:ja  URLバーを自動的にコピーする。

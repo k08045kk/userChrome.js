@@ -1,4 +1,4 @@
-﻿// ==UserScript==
+// ==UserScript==
 // @name          macOSNativeContextMenuHidden.uc.js
 // @description   Apply CSS hiding to native context menus in macOS.
 //                It assumes that the user is using userChrome.menus.css.

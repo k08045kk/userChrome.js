@@ -1,4 +1,4 @@
-﻿// ==UserScript==
+// ==UserScript==
 // @name          NoStyle.uc.js
 // @description   スタイルシートの有効無効をタブコンテキストメニューから選択する。
 //                次の機能をタブコンテキストメニューから呼び出す。

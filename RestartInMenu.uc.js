@@ -1,4 +1,4 @@
-﻿// ==UserScript==
+// ==UserScript==
 // @name          RestartInMenu.uc.js
 // @description   Restart from the menu (main menu / app menu).
 // @include       main
