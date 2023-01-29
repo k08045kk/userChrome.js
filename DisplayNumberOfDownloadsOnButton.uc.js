@@ -6,12 +6,13 @@
 // @charset       UTF-8
 // @author        toshi (https://github.com/k08045kk)
 // @license       MIT License | https://opensource.org/licenses/MIT
-// @compatibility 106+
-// @version       4
+// @compatibility 109+
+// @version       5
 // @since         1 - 20221107 - 初版
 // @since         2 - 20221121 - 二版（#downloadsPanel 方式を追加）
 // @since         3 - 20221210 - requestIdleCallback() を導入（初期化に失敗する事例があったため）
 // @since         4 - 20221218 - 更に10秒遅らせる（初期化に失敗する事例があったため）
+// @since         5 - 20230129 - 再実行の実装
 // @see           https://github.com/k08045kk/userChrome.js
 // ==/UserScript==
 
@@ -21,27 +22,30 @@
 // 常に正確なダウンロード数を求めるならば、別の方法を検討してください。
 
 // 補足：Firefox 起動時にダウンロードボタンが設置済みである必要があります。
+//       Firefox 実行中にダウンロードボタンを撤去しないでください。
 // 補足：プライベートウィンドウは、未対応。
 //     （現状は、通常・プライベートが個別に動作するもよう）
 
 const key = 'DisplayNumberOfDownloadsOnButton.uc.js';
 const share = Services[key] = Services[key] || {windowId:0, data:{count:0}};
-const windowId = share.windowId++;
 
-window.addEventListener('load', () => {
-  window.requestIdleCallback(async () => {
-    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-    let btn = null;
-    for (let i=0; i<10 && !btn; i++) {
-      await sleep(1000);
-      btn = document.getElementById('downloads-button');
-      // 合計で10秒遅らせる（10秒に特別な意味はありません）
-    }
-    const button = btn;
-    if (!button) {
-      // ウィンドウオープン時にダウンロードボタンが設置されていない
+window.addEventListener('load', function() {
+  window.requestIdleCallback(function onInit(win) {
+    win = (win && 'isChromeWindow' in win) ? win : window;
+    if (win[key]) {
+//console.log('error: restart');
       return;
     }
+//console.log('onInit', win);
+    
+    const button = win.document.getElementById('downloads-button');
+    if (!button) {
+      // ウィンドウオープン時にダウンロードボタンが設置されていない
+//console.log('error: no downloads button');
+      return;
+    }
+    win[key] = {windowId:share.windowId++};
+//console.log('start', win[key].windowId);
     
     // バッジを変更する
     const label = button.querySelector('.toolbarbutton-badge');
@@ -97,7 +101,7 @@ window.addEventListener('load', () => {
       _progress = progress;
       setBadgeText(share.data.count);
       
-      //console.log(windowId, share.data.count, progress, notification);
+//console.log(win[key].windowId, share.data.count, progress, notification);
       // 補足：start / finish が 同時 or 連続 に発生するとカウントがズレる。
       // 補足：ダウンロード失敗が発生るとカウントがズレる。
     };
@@ -105,19 +109,36 @@ window.addEventListener('load', () => {
     const observer = new MutationObserver(callback);
     observer.observe(button, config);
     
-    
     // ダウンロードパネルで補正する
-    button.addEventListener('click', (event) => {
-      const downloads = document.querySelectorAll('#downloadsListBox > .download-state[state="0"]');
-      const summary = document.getElementById('downloadsSummaryDescription');
+    const correction = () => {
+      const downloads = win.document.querySelectorAll('#downloadsListBox > .download-state[state="0"]');
+      const summary = win.document.getElementById('downloadsSummaryDescription');
       if (summary.value) {
         share.data.count = downloads.length + (summary.value.match(/\d+/)[0] - 0);
         setBadgeText(share.data.count);
       }
-      
+    };
+    correction();
+    
+    // 未実行のウィンドウで再実行する
+    // 備考：設置直後のウィンドウで動作しない不具合あり、 Firefox 本体の修正待ち
+    //       https://bugzilla.mozilla.org/show_bug.cgi?id=1813365
+    const restart = () => {
+      for (const w of Services.wm.getEnumerator(null)) {
+        if (w[key]) { continue; }
+        onInit(w);
+      }
+    };
+    restart();
+    
+    // ボタンクリック時（補正・再実行）
+    button.addEventListener('click', (event) => {
+      correction();
+      restart();
       // 補足：初回クリック時まではダウンロードパネルが未初期化
     });
   });
+  
   // 補足：設置済みでも load 前には、ダウンロードボタンが存在しない可能性がある。
   // 補足：「about:downloads」から取得すれば正確なダウンロード数が取得できる。
   //       ただし、属性監視より面倒そうなため、今回は取りやめとする。
