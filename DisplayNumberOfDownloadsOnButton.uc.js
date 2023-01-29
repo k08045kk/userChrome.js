@@ -7,10 +7,11 @@
 // @author        toshi (https://github.com/k08045kk)
 // @license       MIT License | https://opensource.org/licenses/MIT
 // @compatibility 106+
-// @version       3
+// @version       4
 // @since         1 - 20221107 - 初版
 // @since         2 - 20221121 - 二版（#downloadsPanel 方式を追加）
 // @since         3 - 20221210 - requestIdleCallback() を導入（初期化に失敗する事例があったため）
+// @since         4 - 20221218 - 更に10秒遅らせる（初期化に失敗する事例があったため）
 // @see           https://github.com/k08045kk/userChrome.js
 // ==/UserScript==
 
@@ -27,15 +28,20 @@ const key = 'DisplayNumberOfDownloadsOnButton.uc.js';
 const share = Services[key] = Services[key] || {windowId:0, data:{count:0}};
 const windowId = share.windowId++;
 
-
 window.addEventListener('load', () => {
-  window.requestIdleCallback(() => {
-    const button = document.getElementById('downloads-button');
+  window.requestIdleCallback(async () => {
+    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+    let btn = null;
+    for (let i=0; i<10 && !btn; i++) {
+      await sleep(1000);
+      btn = document.getElementById('downloads-button');
+      // 合計で10秒遅らせる（10秒に特別な意味はありません）
+    }
+    const button = btn;
     if (!button) {
       // ウィンドウオープン時にダウンロードボタンが設置されていない
       return;
     }
-    
     
     // バッジを変更する
     const label = button.querySelector('.toolbarbutton-badge');
