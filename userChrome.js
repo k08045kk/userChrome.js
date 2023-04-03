@@ -54,6 +54,9 @@ const EXPORTED_SYMBOLS = [];
           // Firefox101+
           // Error: SecurityError: The operation is insecure.
           module = ChromeUtils.import(fileURL);
+          
+          // Note: Can be loaded from the chrome /resource path.
+          //       see https://w.atwiki.jp/fxext/pages/56.html
           break;
         case 'sub-script':
           const principal = Services.scriptSecurityManager.getSystemPrincipal();
