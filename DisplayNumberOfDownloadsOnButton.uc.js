@@ -7,12 +7,13 @@
 // @author        toshi (https://github.com/k08045kk)
 // @license       MIT License | https://opensource.org/licenses/MIT
 // @compatibility 109+
-// @version       5
+// @version       6
 // @since         1 - 20221107 - 初版
 // @since         2 - 20221121 - 二版（#downloadsPanel 方式を追加）
 // @since         3 - 20221210 - requestIdleCallback() を導入（初期化に失敗する事例があったため）
 // @since         4 - 20221218 - 更に10秒遅らせる（初期化に失敗する事例があったため）
 // @since         5 - 20230129 - 再実行の実装
+// @since         6 - 20230318 - fix #2 Fijrefox111対応（別ウィンドウでダウンロード開始を通知しない）
 // @see           https://github.com/k08045kk/userChrome.js
 // ==/UserScript==
 
@@ -48,8 +49,11 @@ window.addEventListener('load', function() {
 //console.log('start', win[key].windowId);
     
     // バッジを変更する
-    const label = button.querySelector('.toolbarbutton-badge');
-    const setBadgeText = (text) => {
+    const setBadgeText = (win, text) => {
+      const button = win.document.getElementById('downloads-button');
+      if (!button) { return; }
+      
+      const label = button.querySelector('.toolbarbutton-badge');
       const attention = button.getAttribute('attention');
       if (text === 0 || attention !== '') {
         text = '';
@@ -64,7 +68,18 @@ window.addEventListener('load', function() {
       //       attention=severe 不明（丸アイコン）
       //       テキストではなく、図形で表される
     };
-    
+    const onUpdate = () => {
+      for (const w of Services.wm.getEnumerator(null)) {
+        if (w[key]) {
+          try {
+//console.log('setBadgeText', share.data.count);
+            setBadgeText(w, share.data.count);
+          } catch (e) {
+//console.log(e);
+          }
+        }
+      }
+    };
     
     // 属性変更を監視する
     let _progress,
@@ -99,7 +114,7 @@ window.addEventListener('load', function() {
         share.data.count = 0;
       }
       _progress = progress;
-      setBadgeText(share.data.count);
+      onUpdate();
       
 //console.log(win[key].windowId, share.data.count, progress, notification);
       // 補足：start / finish が 同時 or 連続 に発生するとカウントがズレる。
@@ -115,7 +130,7 @@ window.addEventListener('load', function() {
       const summary = win.document.getElementById('downloadsSummaryDescription');
       if (summary.value) {
         share.data.count = downloads.length + (summary.value.match(/\d+/)[0] - 0);
-        setBadgeText(share.data.count);
+        onUpdate();
       }
     };
     correction();
