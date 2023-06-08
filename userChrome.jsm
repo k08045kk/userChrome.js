@@ -5,11 +5,12 @@
  * @charset       UTF-8
  * @author        toshi (https://github.com/k08045kk)
  + @license       MIT License | https://opensource.org/licenses/MIT
- * @compatibility 91+ (Firefox / Thunderbird)
+ * @compatibility 102+ (Firefox / Thunderbird)
  *                It supports the latest ESR.
- * @version       0.2
+ * @version       0.3
  * @since         0.1 - 20211104 - 初版
  * @since         0.2 - 20211122 - 二版
+ * @since         0.3 - 20230608 - Firefox115対応（osfile.jsm 削除対応）
  * @see           https://github.com/k08045kk/userChrome.js
  */
 'use strict';
@@ -17,11 +18,12 @@
 const EXPORTED_SYMBOLS = ['UserChromeJS'];
 
 ChromeUtils.defineModuleGetter(this, 'Services', 'resource://gre/modules/Services.jsm');
-ChromeUtils.defineModuleGetter(this, 'OS', 'resource://gre/modules/osfile.jsm');
+//ChromeUtils.defineModuleGetter(this, 'OS', 'resource://gre/modules/osfile.jsm');
+// Note: Firefox115 対応（osfile.jsm 削除対応）
 ChromeUtils.defineModuleGetter(this, 'console', 'resource://gre/modules/Console.jsm');
 
 // バージョン
-const VERSION = '0.2';
+const VERSION = '0.3';
 
 // -------------------- config --------------------
 // デバッグモード (default:false)
@@ -52,6 +54,7 @@ var UserChromeJS = {
   _observed: false, 
   _observedInWindow: false, 
   isUserChromeJS: true, 
+  version: VERSION, 
   debugMode: DEBUG_MODE, 
   reuse: REUSE, 
   subDirectorys: SUB_DIRECOTRYS, 
@@ -84,9 +87,32 @@ var UserChromeJS = {
     //       Thunderbird: chrome://messenger/content/messenger.xhtml
     //       SeaMonkey: chrome://navigator/content/navigator.xul
   },
-  __readFile: async (file) => {
+  __readFile: async (file, url) => {
+/**/  // a. File Stream -------------------------------------------------------
+    const fstream = Components.classes["@mozilla.org/network/file-input-stream;1"]
+                              .createInstance(Components.interfaces.nsIFileInputStream);
+    const cstream = Components.classes["@mozilla.org/intl/converter-input-stream;1"]
+                              .createInstance(Components.interfaces.nsIConverterInputStream);
+    
+    fstream.init(file, -1, 0, 0);
+    cstream.init(fstream, 'UTF-8', 0, 0);
+    
+    let content = '';
+    const data = {};
+    while (cstream.readString(4096, data)) { content += data.value; }
+    
+    cstream.close();
+    return content.replace(/\r\n?/g, '\n');
+/**   // b. OS.File (Firefox 114-) --------------------------------------------
     const uint8array = await OS.File.read(file.path);   // Uint8Array(UTF-8) <- File(UTF-8)
     return new TextDecoder().decode(uint8array);        // String(UTF-16) <- Uint8Array(UTF-8)
+    // Note: Firefox 115 で osfile.jsm がなくなる
+/**   // c. IOUtils  ----------------------------------------------------------
+    return await IOUtils.readUTF8(url, {decompress:true});
+    // Note: IOUtils is not defined
+    //       PathUtils も同様（タイミング？）
+    //       uc.js からは見える
+/**/  // ----------------------------------------------------------------------
   },
   
   // ChromeScript を解析する
@@ -94,7 +120,10 @@ var UserChromeJS = {
     const startTime = Date.now();
     
     const allMetaRe = new RegExp('^// ==UserScript==([\\s\\S]*?)^// ==/UserScript==','m');
-    const content = await this.__readFile(file);
+    const url = Services.io.getProtocolHandler('file')
+                      .QueryInterface(Components.interfaces.nsIFileProtocolHandler)
+                      .getURLSpecFromActualFile(file) + '?' + file.lastModifiedTime;
+    const content = await this.__readFile(file, url);
     const meta = (content.match(allMetaRe) || ['',''])[1];
     
     /** @class ChromeScriptMeta */
@@ -103,7 +132,7 @@ var UserChromeJS = {
       lastModifiedTime: file.lastModifiedTime,
       name: file.leafName,
       path: file.path,
-      url: OS.Path.toFileURI(file.path) + '?' + file.lastModifiedTime,
+      url: url,
       //content: content,
       meta: meta,
       includes: [],

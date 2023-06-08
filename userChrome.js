@@ -8,17 +8,18 @@
 // @charset       UTF-8
 // @author        toshi (https://github.com/k08045kk)
 // @license       MIT License | https://opensource.org/licenses/MIT
-// @compatibility 91+ (Firefox / Thunderbird)
+// @compatibility 102+ (Firefox / Thunderbird)
 //                It supports the latest ESR.
-// @version       0.3
+// @version       0.4
 // @since         0.1 - 20211104 - 初版
 // @since         0.2 - 20211122 - 二版
 // @since         0.3 - 20220610 - Firefox102対応（ChromeUtils.import() で SecurityError になる）
+// @since         0.4 - 20230608 - Firefox115対応
 // @see           https://github.com/k08045kk/userChrome.js
 // ==/UserScript==
 
 const EXPORTED_SYMBOLS = [];
-(() => {
+(function() {
   'use strict';
   
   // 1. Initalize
@@ -55,7 +56,7 @@ const EXPORTED_SYMBOLS = [];
           // Error: SecurityError: The operation is insecure.
           module = ChromeUtils.import(fileURL);
           
-          // Note: Can be loaded from the chrome /resource path.
+          // Note: Can be loaded from the chrome/resource path.
           //       see https://w.atwiki.jp/fxext/pages/56.html
           break;
         case 'sub-script':

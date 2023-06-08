@@ -8,14 +8,15 @@
  * @charset       UTF-8
  * @author        toshi (https://github.com/k08045kk)
  + @license       MIT License | https://opensource.org/licenses/MIT
- * @compatibility 91+ (Firefox / Thunderbird)
+ * @compatibility 102+ (Firefox / Thunderbird)
  *                It supports the latest ESR.
- * @version       0.2
+ * @version       0.3
  * @since         0.1 - 20211104 - First edition
  * @since         0.2 - 20211122 - Second edition
+ * @since         0.3 - 20230608 - Third edition
  * @see           https://github.com/k08045kk/userChrome.js
  */
-(() => {
+(function() {
   'use strict';
   // Note: To avoid character encoding problems, only ASCII codes are used in this file.
   // Note: Use the same filename as config.js as the other userChrome.js AutoConfig methods.
@@ -49,6 +50,9 @@
       
 /**   // a. import method at startup ------------------------------------------
       Components.utils.import(fileURL);
+      
+      // Note: Can be loaded from the chrome/resource path.
+      //       see https://w.atwiki.jp/fxext/pages/56.html
 /**/  // b. sub-script method at startup --------------------------------------
       const principal = Services.scriptSecurityManager.getSystemPrincipal();
       const sandbox = Components.utils.Sandbox(principal, {
@@ -61,14 +65,14 @@
       });
       Services.scriptloader.loadSubScript(fileURL, sandbox);
 /**   // c. sub-script method at window load ----------------------------------
-      const onLoad = (event) => {
+      const onLoad = function(event) {
         const doc = event.originalTarget;
         const win = doc && doc.defaultView;
         if (!(win && 'isChromeWindow' in win)) { return; }
         if (!(win.location.protocol == 'chrome:' || win.location.protocol == 'about:')) { return; }
         Services.scriptloader.loadSubScript(fileURL, win);
       };
-      Services.obs.addObserver((subject, topic, data) => {
+      Services.obs.addObserver(function(subject, topic, data) {
         const win = subject;
         if (!(win && 'isChromeWindow' in win)) { return; }
         win.addEventListener('load', onLoad, {capture:true, passive:true});
