@@ -8,25 +8,28 @@
 // @charset       UTF-8
 // @author        toshi (https://github.com/k08045kk)
 // @license       MIT License | https://opensource.org/licenses/MIT
-// @compatibility 102+ (Firefox / Thunderbird)
+// @compatibility 115+ (Firefox / Thunderbird)
 //                It supports the latest ESR.
-// @version       0.4
+// @version       0.5
 // @since         0.1 - 20211104 - 初版
 // @since         0.2 - 20211122 - 二版
 // @since         0.3 - 20220610 - Firefox102対応（ChromeUtils.import() で SecurityError になる）
 // @since         0.4 - 20230608 - Firefox115対応
+// @since         0.5 - 20230724 - Firefox117対応
 // @see           https://github.com/k08045kk/userChrome.js
 // ==/UserScript==
 
 const EXPORTED_SYMBOLS = [];
 (function() {
-  'use strict';
   
   // 1. Initalize
   const properties = ['ChromeUtils'].filter(property => !globalThis[property]);
   properties.length && Components.utils.importGlobalProperties(properties);
   
-  const {Services} = ChromeUtils.import('resource://gre/modules/Services.jsm');
+  //const {Services} = ChromeUtils.import('resource://gre/modules/Services.jsm');
+  const Services = globalThis.Services;
+  // Note: Supports v117 (Supports deletion of Services.jsm)
+  //       Doesn't work on esr102.
   
   //const {console} = ChromeUtils.import('resource://gre/modules/Console.jsm');
   //console.log('[userChrome.js] console debug: v0.1');

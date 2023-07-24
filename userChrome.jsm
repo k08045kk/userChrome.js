@@ -5,25 +5,27 @@
  * @charset       UTF-8
  * @author        toshi (https://github.com/k08045kk)
  + @license       MIT License | https://opensource.org/licenses/MIT
- * @compatibility 102+ (Firefox / Thunderbird)
+ * @compatibility 115+ (Firefox / Thunderbird)
  *                It supports the latest ESR.
- * @version       0.3
+ * @version       0.4
  * @since         0.1 - 20211104 - 初版
  * @since         0.2 - 20211122 - 二版
  * @since         0.3 - 20230608 - Firefox115対応（osfile.jsm 削除対応）
+ * @since         0.4 - 20230724 - Firefox117対応（Services.jsm 削除対応）
  * @see           https://github.com/k08045kk/userChrome.js
  */
 'use strict';
 
 const EXPORTED_SYMBOLS = ['UserChromeJS'];
 
-ChromeUtils.defineModuleGetter(this, 'Services', 'resource://gre/modules/Services.jsm');
+//ChromeUtils.defineModuleGetter(this, 'Services', 'resource://gre/modules/Services.jsm');
+// Note: v117 対応（Services.jsm 削除対応）
 //ChromeUtils.defineModuleGetter(this, 'OS', 'resource://gre/modules/osfile.jsm');
-// Note: Firefox115 対応（osfile.jsm 削除対応）
+// Note: v115 対応（osfile.jsm 削除対応）
 ChromeUtils.defineModuleGetter(this, 'console', 'resource://gre/modules/Console.jsm');
 
 // バージョン
-const VERSION = '0.3';
+const VERSION = '0.4';
 
 // -------------------- config --------------------
 // デバッグモード (default:false)

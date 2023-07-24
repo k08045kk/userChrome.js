@@ -8,16 +8,16 @@
  * @charset       UTF-8
  * @author        toshi (https://github.com/k08045kk)
  + @license       MIT License | https://opensource.org/licenses/MIT
- * @compatibility 102+ (Firefox / Thunderbird)
+ * @compatibility 115+ (Firefox / Thunderbird)
  *                It supports the latest ESR.
- * @version       0.3
+ * @version       0.4
  * @since         0.1 - 20211104 - First edition
  * @since         0.2 - 20211122 - Second edition
  * @since         0.3 - 20230608 - Third edition
+ * @since         0.4 - 20230724 - Fourth edition
  * @see           https://github.com/k08045kk/userChrome.js
  */
 (function() {
-  'use strict';
   // Note: To avoid character encoding problems, only ASCII codes are used in this file.
   // Note: Use the same filename as config.js as the other userChrome.js AutoConfig methods.
   //       This also has the effect of overwriting files that are no longer needed.
@@ -25,7 +25,10 @@
   
   try {
     // 1. Initalize
-    const {Services} = Components.utils.import('resource://gre/modules/Services.jsm');
+    //const {Services} = Components.utils.import('resource://gre/modules/Services.jsm');
+    const Services = globalThis.Services;
+    // Note: Supports v117 (Supports deletion of Services.jsm)
+    //       Doesn't work on esr102.
     
     //const {console} = Components.utils.import('resource://gre/modules/Console.jsm');
     //console.log('[AutoConfig] console debug: v0.1 (config.js)');
