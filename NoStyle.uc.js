@@ -9,7 +9,7 @@
 // @author        toshi (https://github.com/k08045kk)
 // @license       MIT License | https://opensource.org/licenses/MIT
 // @compatibility 69+
-// @version       6
+// @version       7
 // @since         1 - 20180306 - 初版
 // @since         2 - 20190905 - Firefox69対応 createElement → createXULElement に置換
 // @since         3 - 20200118 - Firefox72対応 messageManager → switchStyleSheet/disableStyle で切換え
@@ -18,6 +18,7 @@
 // @since         5 - 20210201 - コンテキストメニューにチェックボックスを表示する
 // @since         6 - 20210910 - メタデータ修正
 // @since         6 - 20211008 - メタデータ修正
+// @since         7 - 20230901 - gPageStyleMenu の仕様変更に対応
 // @see           https://github.com/k08045kk/userChrome.js
 // @see           https://www.bugbugnow.net/2018/03/nostyleucjsuserchromejs.html
 // ==/UserScript==
@@ -41,10 +42,9 @@
       contextsToVisit.push(...currentContext.children);
     }
   };
-  // chrome://browser/content/browser.js: gPageStyleMenu.switchStyleSheet
+  // chrome://browser/content/browser-pagestyle.js: gPageStyleMenu.switchStyleSheet
   function switchStyleSheet(title, browser) {
-    let { permanentKey } = browser;//gBrowser.selectedBrowser;
-    let sheetData = this._pageStyleSheets.get(permanentKey);
+    let sheetData = this._getStyleSheetInfo(browser);
     if (sheetData && sheetData.filteredStyleSheets) {
       sheetData.authorStyleDisabled = false;
       for (let sheet of sheetData.filteredStyleSheets) {
@@ -54,10 +54,9 @@
     //this._sendMessageToAll("PageStyle:Switch", { title });
     _sendMessageToAll.call(this, "PageStyle:Switch", { title }, browser);
   };
-  // chrome://browser/content/browser.js: gPageStyleMenu.disableStyle
+  // chrome://browser/content/browser-pagestyle.js: gPageStyleMenu.disableStyle
   function disableStyle(browser) {
-    let { permanentKey } = browser;//gBrowser.selectedBrowser;
-    let sheetData = this._pageStyleSheets.get(permanentKey);
+    let sheetData = this._getStyleSheetInfo(browser);
     if (sheetData) {
       sheetData.authorStyleDisabled = true;
     }
