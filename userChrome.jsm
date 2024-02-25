@@ -7,25 +7,22 @@
  + @license       MIT License | https://opensource.org/licenses/MIT
  * @compatibility 115+ (Firefox / Thunderbird)
  *                It supports the latest ESR.
- * @version       0.4
+ * @version       0.5
  * @since         0.1 - 20211104 - 初版
  * @since         0.2 - 20211122 - 二版
  * @since         0.3 - 20230608 - Firefox115対応（osfile.jsm 削除対応）
  * @since         0.4 - 20230724 - Firefox117対応（Services.jsm 削除対応）
+ * @since         0.5 - 20230902 - Cu.importGlobalProperties() を使用する
  * @see           https://github.com/k08045kk/userChrome.js
  */
-'use strict';
 
 const EXPORTED_SYMBOLS = ['UserChromeJS'];
 
-//ChromeUtils.defineModuleGetter(this, 'Services', 'resource://gre/modules/Services.jsm');
-// Note: v117 対応（Services.jsm 削除対応）
-//ChromeUtils.defineModuleGetter(this, 'OS', 'resource://gre/modules/osfile.jsm');
-// Note: v115 対応（osfile.jsm 削除対応）
+Components.utils.importGlobalProperties(['ChromeUtils', 'IOUtils']);
 ChromeUtils.defineModuleGetter(this, 'console', 'resource://gre/modules/Console.jsm');
 
 // バージョン
-const VERSION = '0.4';
+const VERSION = '0.5';
 
 // -------------------- config --------------------
 // デバッグモード (default:false)
@@ -89,11 +86,11 @@ var UserChromeJS = {
     //       Thunderbird: chrome://messenger/content/messenger.xhtml
     //       SeaMonkey: chrome://navigator/content/navigator.xul
   },
-  __readFile: async (file, url) => {
-/**/  // a. File Stream -------------------------------------------------------
-    const fstream = Components.classes["@mozilla.org/network/file-input-stream;1"]
+  __readFile: async (file) => {
+/** // a. File Stream ---------------------------------------------------------
+    const fstream = Components.classes['@mozilla.org/network/file-input-stream;1']
                               .createInstance(Components.interfaces.nsIFileInputStream);
-    const cstream = Components.classes["@mozilla.org/intl/converter-input-stream;1"]
+    const cstream = Components.classes['@mozilla.org/intl/converter-input-stream;1']
                               .createInstance(Components.interfaces.nsIConverterInputStream);
     
     fstream.init(file, -1, 0, 0);
@@ -105,16 +102,13 @@ var UserChromeJS = {
     
     cstream.close();
     return content.replace(/\r\n?/g, '\n');
-/**   // b. OS.File (Firefox 114-) --------------------------------------------
+/** // b. OS.File (Firefox 114-) ----------------------------------------------
     const uint8array = await OS.File.read(file.path);   // Uint8Array(UTF-8) <- File(UTF-8)
     return new TextDecoder().decode(uint8array);        // String(UTF-16) <- Uint8Array(UTF-8)
     // Note: Firefox 115 で osfile.jsm がなくなる
-/**   // c. IOUtils  ----------------------------------------------------------
-    return await IOUtils.readUTF8(url, {decompress:true});
-    // Note: IOUtils is not defined
-    //       PathUtils も同様（タイミング？）
-    //       uc.js からは見える
-/**/  // ----------------------------------------------------------------------
+/**/// c. IOUtils  ------------------------------------------------------------
+    return await IOUtils.readUTF8(file.path);
+/**/// ------------------------------------------------------------------------
   },
   
   // ChromeScript を解析する
@@ -122,10 +116,7 @@ var UserChromeJS = {
     const startTime = Date.now();
     
     const allMetaRe = new RegExp('^// ==UserScript==([\\s\\S]*?)^// ==/UserScript==','m');
-    const url = Services.io.getProtocolHandler('file')
-                      .QueryInterface(Components.interfaces.nsIFileProtocolHandler)
-                      .getURLSpecFromActualFile(file) + '?' + file.lastModifiedTime;
-    const content = await this.__readFile(file, url);
+    const content = await this.__readFile(file);
     const meta = (content.match(allMetaRe) || ['',''])[1];
     
     /** @class ChromeScriptMeta */
@@ -134,7 +125,9 @@ var UserChromeJS = {
       lastModifiedTime: file.lastModifiedTime,
       name: file.leafName,
       path: file.path,
-      url: url,
+      url: Services.io.getProtocolHandler('file')
+                      .QueryInterface(Components.interfaces.nsIFileProtocolHandler)
+                      .getURLSpecFromActualFile(file) + '?' + file.lastModifiedTime,
       //content: content,
       meta: meta,
       includes: [],

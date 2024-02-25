@@ -10,11 +10,12 @@
  + @license       MIT License | https://opensource.org/licenses/MIT
  * @compatibility 115+ (Firefox / Thunderbird)
  *                It supports the latest ESR.
- * @version       0.4
+ * @version       0.5
  * @since         0.1 - 20211104 - First edition
  * @since         0.2 - 20211122 - Second edition
  * @since         0.3 - 20230608 - Third edition
  * @since         0.4 - 20230724 - Fourth edition
+ * @since         0.5 - 20230902 - Fifth edition
  * @see           https://github.com/k08045kk/userChrome.js
  */
 (function() {
@@ -26,12 +27,11 @@
   try {
     // 1. Initalize
     //const {Services} = Components.utils.import('resource://gre/modules/Services.jsm');
-    const Services = globalThis.Services;
     // Note: Supports v117 (Supports deletion of Services.jsm)
     //       Doesn't work on esr102.
     
     //const {console} = Components.utils.import('resource://gre/modules/Console.jsm');
-    //console.log('[AutoConfig] console debug: v0.1 (config.js)');
+    //console.log('[AutoConfig] console debug: v0.5 (config.js)');
     //console.log('[AutoConfig] globalThis', globalThis);
     
     if (Services.appinfo.inSafeMode) {
@@ -58,14 +58,15 @@
       //       see https://w.atwiki.jp/fxext/pages/56.html
 /**/  // b. sub-script method at startup --------------------------------------
       const principal = Services.scriptSecurityManager.getSystemPrincipal();
-      const sandbox = Components.utils.Sandbox(principal, {
+      const options = {
         freshZone: true,
         sandboxName: 'userChrome.js',
         wantComponents: true,
         wantExportHelpers: false,
-        wantGlobalProperties: ['ChromeUtils'],
+        wantGlobalProperties: [],
         wantXrays: true,
-      });
+      };
+      const sandbox = Components.utils.Sandbox(principal, options);
       Services.scriptloader.loadSubScript(fileURL, sandbox);
 /**   // c. sub-script method at window load ----------------------------------
       const onLoad = function(event) {

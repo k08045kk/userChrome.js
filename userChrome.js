@@ -10,12 +10,13 @@
 // @license       MIT License | https://opensource.org/licenses/MIT
 // @compatibility 115+ (Firefox / Thunderbird)
 //                It supports the latest ESR.
-// @version       0.5
+// @version       0.6
 // @since         0.1 - 20211104 - 初版
 // @since         0.2 - 20211122 - 二版
 // @since         0.3 - 20220610 - Firefox102対応（ChromeUtils.import() で SecurityError になる）
 // @since         0.4 - 20230608 - Firefox115対応
 // @since         0.5 - 20230724 - Firefox117対応
+// @since         0.6 - 20230902 - Cu.importGlobalProperties() を使用する
 // @see           https://github.com/k08045kk/userChrome.js
 // ==/UserScript==
 
@@ -23,11 +24,8 @@ const EXPORTED_SYMBOLS = [];
 (function() {
   
   // 1. Initalize
-  const properties = ['ChromeUtils'].filter(property => !globalThis[property]);
-  properties.length && Components.utils.importGlobalProperties(properties);
-  
+  //Components.utils.importGlobalProperties(['ChromeUtils']);
   //const {Services} = ChromeUtils.import('resource://gre/modules/Services.jsm');
-  const Services = globalThis.Services;
   // Note: Supports v117 (Supports deletion of Services.jsm)
   //       Doesn't work on esr102.
   
@@ -40,7 +38,7 @@ const EXPORTED_SYMBOLS = [];
     return;
   }
   
-  const loadScript = (type, name, options) => {
+  const loadScript = (type, name) => {
     let module = null;
     const file = Services.dirsvc.get('UChrm', Components.interfaces.nsIFile);
     file.append(name);
@@ -64,14 +62,15 @@ const EXPORTED_SYMBOLS = [];
           break;
         case 'sub-script':
           const principal = Services.scriptSecurityManager.getSystemPrincipal();
-          const sandbox = Components.utils.Sandbox(principal, {
+          const options = {
             freshZone: true,
             sandboxName: name,
             wantComponents: true,
             wantExportHelpers: false,
-            wantGlobalProperties: options.wantGlobalProperties || ['ChromeUtils'],
+            wantGlobalProperties: [],
             wantXrays: true,
-          });
+          };
+          const sandbox = Components.utils.Sandbox(principal, options);
           Services.scriptloader.loadSubScript(fileURL, sandbox);
           module = sandbox;
           break;
@@ -83,10 +82,9 @@ const EXPORTED_SYMBOLS = [];
     return module;
   };
   const loadJSM = (name) => { return loadScript('import', name); };
-  const loadJS = (name, options) => {  return loadScript('sub-script', name, options); }
+  const loadJS = (name) => {  return loadScript('sub-script', name); }
   
-  const isWindowLoad = 'isChromeWindow' in globalThis;
-  const isStartup = !isWindowLoad;
+  const isStartup = !('isChromeWindow' in globalThis);
   
   
   // 2. Load ChromeScript at startup
@@ -99,21 +97,19 @@ const EXPORTED_SYMBOLS = [];
   
   
   // 3. Load userChrome.jsm
-  if (isStartup || !Services.ucjs) {
-    const options = {wantGlobalProperties: ['ChromeUtils', 'TextDecoder']};
-    const {UserChromeJS} = loadJS('userChrome.jsm', options) || {UserChromeJS:null};
+  if (Services.ucjs == null) {
+    const {UserChromeJS} = loadJS('userChrome.jsm') || {UserChromeJS:null};
     if (UserChromeJS) {
-      UserChromeJS.init();
+      Services.ucjs = UserChromeJS;
+      // Note: Does it matter if I add it to Services?
+      
+      Services.ucjs.init();
       if (isStartup) {
-        UserChromeJS.start();
-      }
-      if (!('ucjs' in Services)) {
-        Services.ucjs = UserChromeJS;
-        // Note: Does it matter if I add it to Services?
+        Services.ucjs.start();
       }
     }
   }
-  if (isWindowLoad && Services.ucjs && Services.ucjs.isUserChromeJS) {
+  if (!isStartup && Services.ucjs && Services.ucjs.isUserChromeJS === true) {
     const win = globalThis.window;
     Services.ucjs.startInWindow(win);
   }
