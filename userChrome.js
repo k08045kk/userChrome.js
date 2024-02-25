@@ -10,18 +10,25 @@
 // @license       MIT License | https://opensource.org/licenses/MIT
 // @compatibility 115+ (Firefox / Thunderbird)
 //                It supports the latest ESR.
-// @version       0.6
+// @version       0.7
 // @since         0.1 - 20211104 - 初版
 // @since         0.2 - 20211122 - 二版
 // @since         0.3 - 20220610 - Firefox102対応（ChromeUtils.import() で SecurityError になる）
 // @since         0.4 - 20230608 - Firefox115対応
 // @since         0.5 - 20230724 - Firefox117対応
 // @since         0.6 - 20230902 - Cu.importGlobalProperties() を使用する
+// @since         0.7 - 20240225 - Firefox123対応（console.log() がない）
 // @see           https://github.com/k08045kk/userChrome.js
 // ==/UserScript==
 
 const EXPORTED_SYMBOLS = [];
 (function() {
+  const debug = (msg) => {
+    Components.classes["@mozilla.org/consoleservice;1"]
+              .getService(Components.interfaces.nsIConsoleService)
+              .logStringMessage(msg);
+    // Firefox 123: console.log(): Error: console is not defined
+  };
   
   // 1. Initalize
   //Components.utils.importGlobalProperties(['ChromeUtils']);
@@ -30,11 +37,11 @@ const EXPORTED_SYMBOLS = [];
   //       Doesn't work on esr102.
   
   //const {console} = ChromeUtils.import('resource://gre/modules/Console.jsm');
-  //console.log('[userChrome.js] console debug: v0.1');
-  //console.log('[userChrome.js] globalThis', globalThis);
+  //debug('[userChrome.js] console debug: v0.7');
+  //debug('[userChrome.js] globalThis', globalThis);
   
   if (Services.appinfo.inSafeMode) {
-    //console.log('[userChrome.js] safe mode.');
+    //debug('[userChrome.js] safe mode.');
     return;
   }
   
@@ -47,7 +54,7 @@ const EXPORTED_SYMBOLS = [];
                                  .QueryInterface(Components.interfaces.nsIFileProtocolHandler)
                                  .getURLSpecFromActualFile(file) + '?' + file.lastModifiedTime;
       //const fileURL = Services.io.newFileURI(file).spec + '?' + file.lastModifiedTime;
-      //console.log('[userChrome.js] fileURL:', fileURL);
+      //debug('[userChrome.js] fileURL:', fileURL);
       // Note: Use the last modified date to prevent the use of the previous cache.
       
       try {

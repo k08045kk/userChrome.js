@@ -7,22 +7,22 @@
  + @license       MIT License | https://opensource.org/licenses/MIT
  * @compatibility 115+ (Firefox / Thunderbird)
  *                It supports the latest ESR.
- * @version       0.5
+ * @version       0.6
  * @since         0.1 - 20211104 - 初版
  * @since         0.2 - 20211122 - 二版
  * @since         0.3 - 20230608 - Firefox115対応（osfile.jsm 削除対応）
  * @since         0.4 - 20230724 - Firefox117対応（Services.jsm 削除対応）
  * @since         0.5 - 20230902 - Cu.importGlobalProperties() を使用する
+// @since         0.6 - 20240225 - Firefox123対応（console.log() がない）
  * @see           https://github.com/k08045kk/userChrome.js
  */
 
 const EXPORTED_SYMBOLS = ['UserChromeJS'];
 
 Components.utils.importGlobalProperties(['ChromeUtils', 'IOUtils']);
-ChromeUtils.defineModuleGetter(this, 'console', 'resource://gre/modules/Console.jsm');
 
 // バージョン
-const VERSION = '0.5';
+const VERSION = '0.6';
 
 // -------------------- config --------------------
 // デバッグモード (default:false)
@@ -68,6 +68,18 @@ var UserChromeJS = {
     //'about:privatebrowsing', 'about:welcomeback', 'about:sessionrestore', 'about:welcome', 
     // Note: chrome://browser/content/browser.js: gInitialPages
   ],
+  
+  // デバッグ用
+  debug: function(msg) {
+    if (this.debugMode) {
+      Components.classes["@mozilla.org/consoleservice;1"]
+                .getService(Components.interfaces.nsIConsoleService)
+                .logStringMessage(msg);
+      // Firefox 123: console.log(): Error: can't access property "log", console is undefined
+      // 備考：uc.js 内では、 console.log() を使用できる。
+      //       Services.scriptloader.loadSubScript() の呼び出し方が影響している模様
+    }
+  },
   
   __isTarget: (win) => {
     return !!(win && 'isChromeWindow' in win);
@@ -157,7 +169,7 @@ var UserChromeJS = {
     for (let m; m=metaFindRe.exec(meta); ) {
       const key = m[1];
       const value = m[2] ? m[2].trim() : '';
-      //this.debugMode && console.log(key, value);
+      //this.debug(key, value);
       switch (key) {
       case 'include':
       case 'exclude':
@@ -175,14 +187,14 @@ var UserChromeJS = {
     if (!details.grants.length || details.grants.indexOf('none') != -1) { details.grants = null; }
     
     const elapsedTime = Date.now() - startTime;
-    this.debugMode && console.log('[userChrome.jsm] _parse():', details.name, elapsedTime+'ms');
-    //this.debugMode && console.log(details);
+    this.debug('[userChrome.jsm] _parse():', details.name, elapsedTime+'ms');
+    //this.debug(details);
     return details;
   },
   
   // ChromeScript を（解析のために）読み込む
   _load: async function(oldscripts) {
-    this.debugMode && console.log('[userChrome.jsm] _load():');
+    this.debug('[userChrome.jsm] _load():');
     const startTime = Date.now();
     
     oldscripts = oldscripts || [];
@@ -194,7 +206,7 @@ var UserChromeJS = {
       const directory = Services.dirsvc.get('UChrm', Components.interfaces.nsIFile);
       directory.append(sub);
       if (directory.exists() && directory.isDirectory()) {
-        this.debugMode && console.log('[userChrome.jsm] _load: '+sub);
+        this.debug('[userChrome.jsm] _load: '+sub);
         const files = directory.directoryEntries
                                .QueryInterface(Components.interfaces.nsISimpleEnumerator);
         while (files.hasMoreElements()) {
@@ -204,7 +216,7 @@ var UserChromeJS = {
             const index = oldpaths.indexOf(file.path);
             const old = 0 <= index ? oldscripts[index] : null;
             if (old && old.lastModifiedTime == file.lastModifiedTime) {
-              this.debugMode && console.log('[userChrome.jsm] reuse:', old.name);
+              this.debug('[userChrome.jsm] reuse:', old.name);
               promises.push(old);
             } else {
               promises.push(this._parse(file).catch(onError));
@@ -216,7 +228,7 @@ var UserChromeJS = {
     const scripts = await Promise.all(promises);
     
     const elapsedTime = Date.now() - startTime;
-    this.debugMode && console.log('[userChrome.jsm] _load:', elapsedTime+'ms');
+    this.debug('[userChrome.jsm] _load:', elapsedTime+'ms');
     return scripts.filter(script => !(script instanceof Error));
   },
   
@@ -281,23 +293,23 @@ var UserChromeJS = {
     const isFrame = 'frame' in option ? option.frame : this.__isFrame(win);
     
     const startTime = Date.now();
-    this.debugMode && console.log('[userChrome.jsm] _exec():', win, scripts);
+    this.debug('[userChrome.jsm] _exec():', win, scripts);
     for (let script of scripts) {
       const isIncludeMain = script.includemain && isMain;
       const isExcludeMain = script.excludemain && isMain;
       if (isFrame && script.noframes) {
         
       } else if (isExcludeMain || script.excludes.some(re => re.test(win.location.href))) {
-        //this.debugMode && console.log('[userChrome.jsm] exclude: '+script.name);
+        //this.debug('[userChrome.jsm] exclude: '+script.name);
       } else if (isIncludeMain || script.includes.some(re => re.test(win.location.href))) {
-        this.debugMode && console.log('[userChrome.jsm] run: '+script.name/*, script.charset*/);
+        this.debug('[userChrome.jsm] run: '+script.name/*, script.charset*/);
         await this._run(win, script);
       } else {
         
       }
     }
     const elapsedTime = Date.now() - startTime;
-    this.debugMode && console.log('[userChrome.jsm] _exec:', elapsedTime+'ms');
+    this.debug('[userChrome.jsm] _exec:', elapsedTime+'ms');
     // Note: script は、順に実行します。並行実行ではなく、実行順を保証します。
     //       実行順に依存する ChromeScript がある場合、
     //       SUB_DIRECOTRYS やファイル名を利用して実行順を制御してください。
@@ -325,7 +337,7 @@ var UserChromeJS = {
     this._observedInWindow = true;
     win.UCJS = {};
     
-    this.debugMode && console.log('[userChrome.jsm] startInWindow():', win);
+    this.debug('[userChrome.jsm] startInWindow():', win);
     if (!this.__isWindow(win)) { return; }
     if (!(win.location.protocol == 'chrome:' || win.location.protocol == 'about:')) { return; }
     if (this.disableLocations.indexOf(win.location.href) != -1) { return; }
@@ -343,7 +355,7 @@ var UserChromeJS = {
     win.document.addEventListener('load', async (event) => {
       const doc = event.originalTarget;
       const win = doc && doc.defaultView;
-      this.debugMode && console.log('[userChrome.jsm] startInFrame():', win);
+      this.debug('[userChrome.jsm] startInFrame():', win);
       if (!this.__isFrame(win)) { return; }
       
       scripts = scripts
@@ -360,7 +372,7 @@ var UserChromeJS = {
     if (this._observed || this._observedInWindow) { return; }
     this._observed = true;
     
-    this.debugMode && console.log('[userChrome.jsm] start():');
+    this.debug('[userChrome.jsm] start():');
     const onLoad = async (event) => {
       const doc = event.originalTarget;
       const win = doc && doc.defaultView;
@@ -369,7 +381,7 @@ var UserChromeJS = {
       // Note: ウィンドウとフレームで同じ ChromeScript を保証しません。
     };
     Services.obs.addObserver((subject, topic, data) => {
-      this.debugMode && console.log('[userChrome.jsm] onWindowOpend():', subject, topic, data);
+      this.debug('[userChrome.jsm] onWindowOpend():', subject, topic, data);
       const win = subject;
       if (!this.__isWindow(win)) { return; }
       // Note: win.location.href == 'about:blank' -> true
@@ -382,10 +394,10 @@ var UserChromeJS = {
    * 初期化する
    */
   init: function() {
-    this.debugMode && console.log('[userChrome.jsm] init():');
+    this.debug('[userChrome.jsm] init():');
     
     if (!(this._promise || this._scripts)) {
-      this.debugMode && console.log('[userChrome.jsm] build():');
+      this.debug('[userChrome.jsm] build():');
       this.rebuild();
     }
   },

@@ -10,12 +10,13 @@
  + @license       MIT License | https://opensource.org/licenses/MIT
  * @compatibility 115+ (Firefox / Thunderbird)
  *                It supports the latest ESR.
- * @version       0.5
+ * @version       0.6
  * @since         0.1 - 20211104 - First edition
  * @since         0.2 - 20211122 - Second edition
  * @since         0.3 - 20230608 - Third edition
  * @since         0.4 - 20230724 - Fourth edition
  * @since         0.5 - 20230902 - Fifth edition
+// @since         0.6 - 20240225 - fix console is not defined
  * @see           https://github.com/k08045kk/userChrome.js
  */
 (function() {
@@ -25,17 +26,24 @@
   //       This is also the case for config-pref.js.
   
   try {
+    const debug = (msg) => {
+      Components.classes["@mozilla.org/consoleservice;1"]
+                .getService(Components.interfaces.nsIConsoleService)
+                .logStringMessage(msg);
+      // Firefox 123: console.log(): Error: console is not defined
+    };
+    
     // 1. Initalize
     //const {Services} = Components.utils.import('resource://gre/modules/Services.jsm');
     // Note: Supports v117 (Supports deletion of Services.jsm)
     //       Doesn't work on esr102.
     
     //const {console} = Components.utils.import('resource://gre/modules/Console.jsm');
-    //console.log('[AutoConfig] console debug: v0.5 (config.js)');
-    //console.log('[AutoConfig] globalThis', globalThis);
+    //debug('[AutoConfig] console debug: v0.6 (config.js)');
+    //debug('[AutoConfig] globalThis', globalThis);
     
     if (Services.appinfo.inSafeMode) {
-      //console.log('[AutoConfig] safe mode.');
+      //debug('[AutoConfig] safe mode.');
       return;
     }
     
@@ -48,7 +56,7 @@
                                  .QueryInterface(Components.interfaces.nsIFileProtocolHandler)
                                  .getURLSpecFromActualFile(file) + '?' + file.lastModifiedTime;
       //const fileURL = Services.io.newFileURI(file).spec + '?' + file.lastModifiedTime;
-      //console.log('[AutoConfig] fileURL:', fileURL);
+      //debug('[AutoConfig] fileURL:', fileURL);
       // Note: Use the last modified date to prevent the use of the previous cache.
       
 /**   // a. import method at startup ------------------------------------------
