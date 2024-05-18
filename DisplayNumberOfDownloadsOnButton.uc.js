@@ -6,14 +6,15 @@
 // @charset       UTF-8
 // @author        toshi (https://github.com/k08045kk)
 // @license       MIT License | https://opensource.org/licenses/MIT
-// @compatibility 109+
-// @version       6
+// @compatibility 126+
+// @version       7
 // @since         1 - 20221107 - 初版
 // @since         2 - 20221121 - 二版（#downloadsPanel 方式を追加）
 // @since         3 - 20221210 - requestIdleCallback() を導入（初期化に失敗する事例があったため）
 // @since         4 - 20221218 - 更に10秒遅らせる（初期化に失敗する事例があったため）
 // @since         5 - 20230129 - 再実行の実装
-// @since         6 - 20230318 - fix #2 Fijrefox111対応（別ウィンドウでダウンロード開始を通知しない）
+// @since         6 - 20230318 - fix #2 Firefox111対応（別ウィンドウでダウンロード開始を通知しない）
+// @since         7 - 20240518 - Firefox126対応
 // @see           https://github.com/k08045kk/userChrome.js
 // ==/UserScript==
 
@@ -50,14 +51,16 @@ window.addEventListener('load', function() {
     
     // バッジを変更する
     const setBadgeText = (win, text) => {
+//console.log('setBadgeText', win, text);
       const button = win.document.getElementById('downloads-button');
       if (!button) { return; }
       
       const label = button.querySelector('.toolbarbutton-badge');
       const attention = button.getAttribute('attention');
-      if (text === 0 || attention !== '') {
+      if (text === 0 || attention != null) {
         text = '';
       }
+//console.log(label, attention, text, label?.textContent);
       if (text != label.textContent) {
         label.textContent = text;
         label.style.backgroundColor = text !== '' ? 'blueviolet' : '';
@@ -69,10 +72,10 @@ window.addEventListener('load', function() {
       //       テキストではなく、図形で表される
     };
     const onUpdate = () => {
+//console.log('onUpdate', share.data.count);
       for (const w of Services.wm.getEnumerator(null)) {
         if (w[key]) {
           try {
-//console.log('setBadgeText', share.data.count);
             setBadgeText(w, share.data.count);
           } catch (e) {
 //console.log(e);
@@ -94,7 +97,7 @@ window.addEventListener('load', function() {
             share.data.count = 1;
           }
         } else if (notification === 'start') {
-          if (_progress === '') {
+          if (_progress == null) {
             if (share.data.count === 0) {
               share.data.count++;
             }
